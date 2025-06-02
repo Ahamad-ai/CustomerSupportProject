@@ -3,5 +3,16 @@ requests
 pandas
 nltk
 emoji
+langchain
+langchain_google_genai
+dotenv
+langchain_groq
+langchain_astradb
+fastapi
+uvicorn
+jinja2
+python-multipart
+
+-e .
 
 

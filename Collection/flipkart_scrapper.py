@@ -10,6 +10,8 @@ import emoji
 class FlipkartScraper:
     """Class to scrape product details from Flipkart."""
 
+    file_path = "Data/flipkart_realtime_scrape.csv"
+
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9"
@@ -23,7 +25,7 @@ class FlipkartScraper:
             "product_title": [],
             "product_price": [],
             "product_rating": [],
-            "product_highlights":[],
+            "product_highlights": [],
             "product_description": [],
             "product_reviews": [],
             "product_link": []
@@ -60,7 +62,7 @@ class FlipkartScraper:
     def get_description(soup):
         """Extracts the product description."""
         try:
-            description = soup.find("div",attrs={"class":"yN+eNk w9jEaj"})
+            description = soup.find("div", attrs={"class": "yN+eNk w9jEaj"})
             return description.text if description and len(description.text) > 0 else "NA"
         except Exception as e:
             raise CustomerSupportSystemException(f"Error fetching description: {e}")
@@ -76,12 +78,12 @@ class FlipkartScraper:
 
     @staticmethod
     def get_highlights(soup):
+        """Extracts product highlights."""
         try:
-            product_highlights= soup.find_all("li",attrs={"class":"_7eSDEz"})
-            return " ".join([highlights.text for highlights in product_highlights]) if product_highlights else "NA"
+            product_highlights = soup.find_all("li", attrs={"class": "_7eSDEz"})
+            return " ".join([highlight.text for highlight in product_highlights]) if product_highlights else "NA"
         except Exception as e:
-            raise CustomerSupportSystemException(f"Error fetching reviews: {e}")
-
+            raise CustomerSupportSystemException(f"Error fetching highlights: {e}")
 
     def get_product_links(self):
         """Fetches product links from Flipkart search results."""
@@ -91,12 +93,12 @@ class FlipkartScraper:
 
         links = soup.find_all("a", attrs={"class": "CGtC98"})
         return ["https://flipkart.com" + link.get("href") for link in links if link.get("href")]
-    
-    def remove_emojis(self,text):
+
+    def remove_emojis(self, text):
         return emoji.replace_emoji(text, replace="")
-    
-    def remove_READMORE(self,text):
-        return text.replace("READ MORE","")
+
+    def remove_READMORE(self, text):
+        return text.replace("READ MORE", "")
 
     def scrape_products(self):
         """Scrapes product details and stores them in a DataFrame."""
@@ -114,16 +116,30 @@ class FlipkartScraper:
             self.data_dict["product_reviews"].append(self.get_reviews(new_soup))
             self.data_dict["product_link"].append(product_link)
 
-        flipkart_scrape_df=pd.DataFrame.from_dict(self.data_dict)
-        flipkart_scrape_df.drop(flipkart_scrape_df[flipkart_scrape_df["product_title"] == "NA"].index,inplace=True)
-        flipkart_scrape_df["product_reviews"]=flipkart_scrape_df["product_reviews"].apply(self.remove_READMORE)
-        flipkart_scrape_df["product_reviews"]=flipkart_scrape_df["product_reviews"].apply(self.remove_emojis)
-        return flipkart_scrape_df
+        return pd.DataFrame.from_dict(self.data_dict)
+
+    def run_pipeline(self):
+        """Executes full scraping pipeline with data cleaning and saving."""
+        print("Starting Flipkart Scraper...")
+        
+        df = self.scrape_products()
+
+        # Remove rows where product_title is 'NA'
+        df.drop(df[df["product_title"] == "NA"].index, inplace=True)
+
+        # Clean product reviews
+        df["product_reviews"] = df["product_reviews"].apply(self.remove_READMORE)
+        df["product_reviews"] = df["product_reviews"].apply(self.remove_emojis)
+
+        # Save to CSV
+        df.to_csv(self.file_path, index=False)
+        print(f"Scraping completed! Data saved to {self.file_path}")
+
+        return df
 
 # Example usage
 if __name__ == "__main__":
-    product_category = "samsung"
+    product_category = "Smart TV"
     scraper = FlipkartScraper(product_category)
-    df = scraper.scrape_products()
-    print(df.head())  
-    df.to_csv("flipkart_data.csv", index=False)
+    df = scraper.run_pipeline()
+    print(df.head())
