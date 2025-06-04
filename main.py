@@ -1,89 +1,91 @@
 import uvicorn
-from fastapi import FastAPI, Query, Request
-from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from Collection.flipkart_scrapper import FlipkartScraper
 from data_ingestion.ingestion_pipeline import DataIngestion
 from retriever.retrievals import Retriever
-from prompt_library.prompt import PROMPT_TEMPLATES
 from utils.model_loader import ModelLoader
+from prompt_library.prompt import PROMPT_TEMPLATES
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+import pandas as pd
 
+# Initialize FastAPI app
 app = FastAPI()
 
-# Serve static files (CSS, images)
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Load templates
+# Setup templates
 templates = Jinja2Templates(directory="templates")
 
-# Enable CORS to allow frontend requests
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+# Define the Query model
+class Query(BaseModel):
+    query: str
 
-retriever_obj = Retriever()
-model_loader = ModelLoader()
+# Global variables for retriever and model (Initially None)
+retriever_obj = None
+model_loader = None
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Render the chatbot interface."""
+async def get_chat_page(request: Request):
+    """Serve the chat interface."""
     return templates.TemplateResponse("chat.html", {"request": request})
 
-@app.post("/scrape")
-async def scrape_flipkart(product_category: str = Query(..., description="Product category to scrape")):
-    """Scrapes Flipkart product data and returns JSON."""
+@app.post("/scrape/{product_category}")
+async def scrape_data(product_category: str):
+    """Scrape product data from Flipkart."""
     try:
         scraper = FlipkartScraper(product_category)
         df = scraper.run_pipeline()
-        return JSONResponse(content={"data": df.to_dict(orient="records")})
+        data = df.to_dict(orient='records')
+        return {"message": f"Data scraped for {product_category}", "data": data}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/ingest")
 async def ingest_data():
-    """Transforms scraped data and stores it in AstraDB."""
+    """Ingest data into AstraDB and load retriever & model once."""
+    global retriever_obj, model_loader  # Use global variables
     try:
         ingestion = DataIngestion()
         ingestion.run_pipeline()
-        return JSONResponse(content={"message": "Data successfully stored in AstraDB"})
+
+        # Load retriever and model **ONLY ONCE**
+        retriever_obj = Retriever().load_retriever()
+        model_loader = ModelLoader().load_llm()
+        
+        return {"message": "Data successfully stored in AstraDB!"}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/query")
-async def query_product(question: str = Query(..., description="Ask about a Flipkart product")):
-    """Retrieves product details and returns AI response."""
+@app.post("/chat")
+async def chat(query: Query):
+    """Process chat queries with preloaded retriever & model."""
+    global retriever_obj, model_loader
+
+    if retriever_obj is None or model_loader is None:
+        raise HTTPException(status_code=500, detail="Model & retriever not loaded. Run /ingest first.")
+
     try:
-        retriever = retriever_obj.load_retriever()
-        context_docs = retriever.invoke(question)  
-        context_text = "\n".join([doc.page_content for doc in context_docs])  
-
-        prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATES["product_bot"])
-        llm = model_loader.load_llm()
+        prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATES["customer_support_bot"])
 
         chain = (
-            {"context": RunnablePassthrough(), "question": RunnablePassthrough()}
+            {"context": retriever_obj, "question": RunnablePassthrough()}
             | prompt
-            | llm
+            | model_loader
             | StrOutputParser()
         )
 
-        result = chain.invoke({"context": context_text, "question": question})  
-        print(f"AI Response: {result}")  # ✅ Debugging log
-
-        return JSONResponse(content={"answer": str(result)})
+        response = chain.invoke(query.query)
+        return {"response": response}
     except Exception as e:
-        print(f"Error Occurred: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
+# Run application
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8888)

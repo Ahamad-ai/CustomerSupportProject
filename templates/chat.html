@@ -3,92 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flipkart AI Chatbot</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <title>Flipkart AI Chatbot</title>
 </head>
 <body>
+    <div class="chatbot-header">
+        <h1>Flipkart AI Chatbot</h1>
+        <button class="close-btn" onclick="closeChat()">✖</button>
+    </div>
     <div class="container">
-        <h1>🛒 Flipkart AI Chatbot</h1>
-
-        <div class="sidebar">
-            <h3>🔍 Product Scraper</h3>
-            <input type="text" id="productCategory" placeholder="Enter product category">
-            <button onclick="scrapeData()">Scrape Data</button>
-            <button onclick="ingestData()">Ingest Data</button>
+        <div class="product-input-section">
+            <input type="text" id="product-category" placeholder="Enter product category...">
+            <button onclick="getInformation()">Get Information</button>
         </div>
-
-        <div id="scraped-data"></div>
-
-        <div class="chat-container">
-            <div id="chatbox"></div>
-            <input type="text" id="query" placeholder="Ask about Flipkart products..." required>
+        <div id="status-message" class="status-message"></div>
+        <button onclick="toggleTableVisibility()">View Scrapped Details</button>
+        <div id="data-table-container" class="data-table-container" style="display:none;">
+            <div id="data-table" class="data-table"></div>
+        </div>
+        <button onclick="ingestData()">Ingest Data</button>
+        <div id="chat-box" class="chat-box">
+            <!-- Chat messages will be inserted here -->
+        </div>
+        <div class="input-section">
+            <input type="text" id="user-input" placeholder="Ask about Flipkart products...">
             <button onclick="sendMessage()">Send</button>
         </div>
     </div>
 
     <script>
-        async function scrapeData() {
-            let category = document.getElementById("productCategory").value;
-            if (!category) return alert("Enter a product category!");
+        function closeChat() {
+            alert("Chat closed.");
+        }
 
-            // Show loading message
-            document.getElementById("scraped-data").innerHTML = `<p style="color: blue;">Scraping in progress... ⏳</p>`;
+        async function getInformation() {
+            const productCategory = document.getElementById('product-category').value;
+            if (!productCategory) {
+                alert("Please enter a product category!");
+                return;
+            }
 
-            try {
-                let response = await fetch(`/scrape?product_category=${encodeURIComponent(category)}`, {
-                    method: "POST"
-                });
+            document.getElementById('status-message').innerHTML = "🕒 Gathering information is in progress...";
+            const response = await fetch(`/scrape/${productCategory}`, { method: 'POST' });
+            const data = await response.json();
+            document.getElementById('status-message').innerHTML = "✅ Information gathered successfully!";
+            displayData(data.data);
+        }
 
-                let data = await response.json();
+        function displayData(data) {
+            let tableHtml = '<table>';
+            tableHtml += '<tr><th>Title</th><th>Price</th><th>Rating</th><th>Highlights</th><th>Description</th><th>Reviews</th><th>Link</th></tr>';
+            data.forEach(item => {
+                tableHtml += `<tr>
+                                <td>${item.product_title}</td>
+                                <td>${item.product_price}</td>
+                                <td>${item.product_rating}</td>
+                                <td>${item.product_highlights}</td>
+                                <td>${item.product_description}</td>
+                                <td>${item.product_reviews}</td>
+                                <td><a href="${item.product_link}" target="_blank">View Product</a></td>
+                            </tr>`;
+            });
+            tableHtml += '</table>';
+            document.getElementById('data-table').innerHTML = tableHtml;
+        }
 
-                // Show completion message
-                document.getElementById("scraped-data").innerHTML = `
-                    <p style="color: green;">✅ Scraping completed!</p>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                `;
-            } catch (error) {
-                document.getElementById("scraped-data").innerHTML = `<p style="color: red;">❌ Error: Unable to fetch data!</p>`;
-                console.error("Scraping failed:", error);
+        async function getInformation() {
+                const productCategory = document.getElementById('product-category').value;
+                if (!productCategory) {
+                    alert("Please enter a product category!");
+                    return;
+                }
+
+                document.getElementById('status-message').innerHTML = "🕒 Gathering information is in progress...";
+                const response = await fetch(`/scrape/${productCategory}`, { method: 'POST' });
+                const data = await response.json();
+                document.getElementById('status-message').innerHTML = "✅ Information gathered successfully!";
+                displayData(data.data);
+            }
+        function toggleTableVisibility() {
+            const container = document.getElementById('data-table-container');
+            const button = document.querySelector('button[onclick="toggleTableVisibility()"]');
+            if (container.style.display === "none") {
+                container.style.display = "block";
+                button.innerText = "Hide Scrapped Details";
+            } else {
+                container.style.display = "none";
+                button.innerText = "View Scrapped Details";
             }
         }
 
         async function ingestData() {
-            await fetch("/ingest", { method: "POST" });
-            alert("Data successfully stored in AstraDB!");
+            const response = await fetch('/ingest', { method: 'POST' });
+            const data = await response.json();
+            alert(data.message);
         }
 
-        async function fetchData() {
-            let response = await fetch("/query?question=Which iPhone is better?");
-            let data = await response.json();
-            
-            console.log("API Response:", data);  // ✅ Prints response in browser console
+        async function sendMessage() {
+            const input = document.getElementById('user-input').value;
+            if (!input) return;
+
+            const chatBox = document.getElementById('chat-box');
+            const timestamp = new Date().toLocaleTimeString();
+            chatBox.innerHTML += `<div class="message user-message"><div class="icon-container"><img src="/static/assets/user.png" class="icon"></div><div class="message-content">${input}<span class="timestamp">${timestamp}</span></div></div>`;
+
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: input })
+            });
+            const data = await response.json();
+            chatBox.innerHTML += `<div class="message assistant-message"><div class="icon-container"><img src="/static/assets/bot.png" class="icon"></div><div class="message-content">${data.response}<span class="timestamp">${timestamp}</span></div></div>`;
+            document.getElementById('user-input').value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
-        async function sendData() {
-            let query = document.getElementById("query").value;
-            if (!query) {
-                alert("Enter a question!");
-                return;
-            }
-
-            $("#chatbox").append(`<p><strong>You:</strong> ${query}</p>`); // Show user input
-
-            try {
-                let response = await fetch(`/query?question=${encodeURIComponent(query)}`, {
-                    method: "GET",
-                });
-
-                let data = await response.json();
-                console.log("RAG Chain Response:", data);  // ✅ Print response for debugging
-
-                $("#chatbox").append(`<p><strong>Bot:</strong> ${data.answer}</p>`);  // Show AI response
-                document.getElementById("query").value = "";  // Clear input field
-
-            } catch (error) {
-                console.error("Error fetching response:", error);
-                $("#chatbox").append(`<p style='color:red;'>❌ Error fetching response!</p>`);
-            }
-        }
-
     </script>
 </body>
 </html>

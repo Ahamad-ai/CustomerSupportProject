@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 from typing import List, Tuple
 from langchain_core.documents import Document
@@ -69,38 +70,41 @@ class DataIngestion:
         return df
     
     def transform_data(self):
-        """
-        Transform product data into list of Langchain Document object
-        """
         product_list=[]
-        
         
         for _,row in self.product_data.iterrows():
             product_entry={
-                "product_title":row["product_title"],
-                "product_price":row["product_price"],
-                "product_rating":row["product_rating"],
-                "product_highlights":row["product_highlights"],
-                "product_description":row["product_description"],
-                "product_reviews":row["product_reviews"],
-                "product_link":row["product_link"]
-            }
+                "product_title": row["product_title"],
+                "product_price": row["product_price"],
+                "product_rating": row["product_rating"],
+                "product_highlights": row["product_highlights"],
+                "product_reviews": row["product_reviews"],
+                "product_description": row["product_description"],
+                "product_link": row["product_link"]            
+                }
             product_list.append(product_entry)
 
         documents=[]
         for entry in product_list:
-            metadata={
-                "product_title":row["product_title"],
-                "product_price":row["product_price"],
-                "product_rating":row["product_rating"],
-                "product_highlights":row["product_highlights"],
-                "product_description":row["product_description"],
-                "product_link":row["product_link"]
+            metadata = {
+                "product_title": entry["product_title"],
+                "product_price": entry["product_price"],
+                "product_rating": entry["product_rating"],
+                "product_highlights": entry["product_highlights"],
+                "product_description": entry["product_description"],
+                "product_link": entry["product_link"]
             }
-            doc=Document(page_content=entry["product_reviews"])
+            for key, value in metadata.items():
+                if isinstance(value, float) and np.isnan(value):  # Check if it's NaN
+                    metadata[key] = ""  # Replace NaN with an empty string
+
+            review_content = entry.get("product_reviews", "")
+            if isinstance(review_content, float) and np.isnan(review_content):
+                review_content = "No reviews available."
+
+            doc = Document(page_content=review_content, metadata=metadata)
             documents.append(doc)
 
-        print(f"Transformed {len(documents)} documents.")
         return documents
         
     def store_in_vector_db(self,documents: List[Document]):

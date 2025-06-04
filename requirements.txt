@@ -12,7 +12,8 @@ fastapi
 uvicorn
 jinja2
 python-multipart
-
+numpy
+setuptools
 -e .
 
 

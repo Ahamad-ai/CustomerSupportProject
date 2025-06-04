@@ -48,6 +48,7 @@ class Retriever:
 
     def call_retriever(self,query:str)-> List[Document]:
         retriever=self.load_retriever()
+        query=retriever.similarity_search(query)
         output=retriever.invoke(query)
         return output     
 
