@@ -5,6 +5,7 @@ import sys
 sys.path.append("D:/Projects/CustomerSupportSystem/")
 from exception.exceptions import CustomerSupportSystemException
 import emoji
+import time
 
 
 class FlipkartScraper:
@@ -85,14 +86,43 @@ class FlipkartScraper:
         except Exception as e:
             raise CustomerSupportSystemException(f"Error fetching highlights: {e}")
 
-    def get_product_links(self):
-        """Fetches product links from Flipkart search results."""
-        search_url = self.BASE_URL.format(product_category=self.product_category)
-        webpage = requests.get(search_url, headers=self.HEADERS)
-        soup = BeautifulSoup(webpage.content, "html.parser")
+    # def get_product_links(self):
+    #     """Fetches product links from Flipkart search results."""
+    #     search_url = self.BASE_URL.format(product_category=self.product_category)
+    #     webpage = requests.get(search_url, headers=self.HEADERS)
+    #     soup = BeautifulSoup(webpage.content, "html.parser")
+    #     print(soup)
+    #     links = soup.find_all("a", attrs={"class": "CGtC98"})
+    #     print(links)
+    #     return ["https://flipkart.com" + link.get("href") for link in links if link.get("href")]
+    
 
-        links = soup.find_all("a", attrs={"class": "CGtC98"})
-        return ["https://flipkart.com" + link.get("href") for link in links if link.get("href")]
+
+    def get_product_links(self):
+        """Fetches product links from Flipkart search results with a wait-until mechanism."""
+        search_url = self.BASE_URL.format(product_category=self.product_category)
+        
+        max_attempts = 5  # Set a retry limit to avoid infinite loops
+        attempt = 0
+        links = []
+        
+        while not links and attempt < max_attempts:
+            webpage = requests.get(search_url, headers=self.HEADERS)
+            soup = BeautifulSoup(webpage.content, "html.parser")
+            
+            links = soup.find_all("a", attrs={"class": "CGtC98"})
+            
+            if not links:
+                print(f"Attempt {attempt+1}: No links found. Retrying...")
+                time.sleep(2)  # Wait before retrying
+                attempt += 1
+        
+        if links:
+            print("✅ Links found!")
+            return ["https://flipkart.com" + link.get("href") for link in links if link.get("href")]
+        else:
+            print("❌ No product links found after multiple attempts.")
+            return []
 
     def remove_emojis(self, text):
         return emoji.replace_emoji(text, replace="")
@@ -103,7 +133,7 @@ class FlipkartScraper:
     def scrape_products(self):
         """Scrapes product details and stores them in a DataFrame."""
         product_links = self.get_product_links()
-
+        print(product_links)
         for product_link in product_links:
             new_webpage = requests.get(product_link, headers=self.HEADERS)
             new_soup = BeautifulSoup(new_webpage.content, "html.parser")

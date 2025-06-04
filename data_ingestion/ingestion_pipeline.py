@@ -97,7 +97,7 @@ class DataIngestion:
                 "product_description":row["product_description"],
                 "product_link":row["product_link"]
             }
-            doc=Document(page_content=entry["product_reviews"],metadata=metadata)
+            doc=Document(page_content=entry["product_reviews"])
             documents.append(doc)
 
         print(f"Transformed {len(documents)} documents.")
@@ -126,13 +126,6 @@ class DataIngestion:
 
         documents=self.transform_data()
         vstore,inserted_ids = self.store_in_vector_db(documents)
-
-        query = "Can you which smart tv is best?"
-        results = vstore.similarity_search(query)
-
-        print(f"Sample search results for query : {query}")
-        for res in results:
-            print(f"Content: {res.page_content}\n Metadata: {res.metadata}\n")
 
 
 if __name__=="__main__":

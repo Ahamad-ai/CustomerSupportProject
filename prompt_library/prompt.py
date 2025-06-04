@@ -11,7 +11,7 @@ PROMPT_TEMPLATES = {
     {question}
 
     YOUR RESPONSE:
-    Provide a helpful, concise answer based on the product details and reviews. 
+    Provide a helpful, concise answer based on the product details and reviews. "Not more than 250 words."
     If the inquiry involves product selection, highlight **key benefits** and **customer insights**.
     If troubleshooting, suggest **step-by-step solutions** or direct the user to relevant resources.
 
