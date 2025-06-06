@@ -11,7 +11,7 @@ PROMPT_TEMPLATES = {
     {question}
 
     YOUR RESPONSE:
-    Provide a helpful, concise answer based on the product details and reviews. Limit the response to 250 words.
+    Provide a helpful, concise answer based on the product details and reviews. Limit the response to 60 words.
 
     Instructions for response:
     - **Use numbered or bullet points** to organize information logically.

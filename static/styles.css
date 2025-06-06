@@ -3,15 +3,18 @@ body {
     background-color: #f1f3f6;
     margin: 0;
     padding: 0;
+
 }
 
 .chatbot-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
+    padding: 5px;
     background-color: #2874f0;
     color: #fff;
+    height: 10px;
+    
 }
 
 .close-btn {

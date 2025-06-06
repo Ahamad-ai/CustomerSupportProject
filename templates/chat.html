@@ -5,35 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/styles.css">
     <title>Flipkart AI Chatbot</title>
+    <style>
+        body {
+            background-color: #87CEEB;
+            background-size: cover;
+            background-position: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .product-input-section {
+            text-align: center;
+        }
+        .truncate {
+            max-width: 150px; /* Adjust width as needed */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .expandable {
+            cursor: pointer;
+        }
+        .expanded {
+            white-space: normal;
+            overflow: visible;
+            max-width: none;
+        }
+        #chatbot-icon {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            display: block;
+            background-image: url('static/assets/support-png.webp');
+            background-size: cover;
+            background-color: #FFFF00;
+            width: 120px;
+            height: 120px;
+            border-radius: 100%;
+            cursor: pointer;
+        }
+        .chatbot-container {
+            display: none;
+            background-color: #FFFF00;
+            padding: 20px;
+            border-radius: 10px;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        #data-table-container {
+            margin-top: 20px;
+            display: none;
+            width: 80%;
+            max-width: 1300px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <div class="chatbot-header">
-        <h1>Flipkart AI Chatbot</h1>
-        <button class="close-btn" onclick="closeChat()">✖</button>
+    <div class="product-input-section">
+        <input type="text" id="product-category" placeholder="Enter product category..." aria-label="Product category">
+        <button onclick="getInformation()">Get Information</button><br />
     </div>
-    <div class="container">
-        <div class="product-input-section">
-            <input type="text" id="product-category" placeholder="Enter product category...">
-            <button onclick="getInformation()">Get Information</button>
-        </div>
+    <div>
         <div id="status-message" class="status-message"></div>
-        <button onclick="toggleTableVisibility()">View Scrapped Details</button>
-        <div id="data-table-container" class="data-table-container" style="display:none;">
+        <button onclick="toggleTableVisibility()">View Scrapped Details</button><br />
+        <div id="data-table-container" class="data-table-container">
             <div id="data-table" class="data-table"></div>
+        </div><br />        
         </div>
-        <button onclick="ingestData()">Ingest Data</button>
-        <div id="chat-box" class="chat-box">
+        <div>
+            <button onclick="ingestData()">Ingest Data</button>
+        </div>
+    <div class="chatbot-container">
+        <div class="chatbot-header">
+            <h5>Flipkart AI Chatbot</h5>
+            <button class="close-btn" onclick="closeChat()" aria-label="Close chat">✖</button>
+        </div>
+        <div class="container">
+            <div id="chat-box" class="chat-box">
             <!-- Chat messages will be inserted here -->
-        </div>
-        <div class="input-section">
-            <input type="text" id="user-input" placeholder="Ask about Flipkart products...">
-            <button onclick="sendMessage()">Send</button>
+            </div>
+            <div class="input-section">
+                <input type="text" id="user-input" placeholder="Ask about Flipkart products..." aria-label="User input">
+                <button onclick="sendMessage()">Send</button>
+            </div>
         </div>
     </div>
+    <div id="chatbot-icon" onclick="openChat()" aria-label="Chatbot icon"></div>
 
     <script>
         function closeChat() {
-            alert("Chat closed.");
+            document.querySelector('.chatbot-container').style.display = 'none';
+            document.getElementById('chatbot-icon').style.display = 'block';
+        }
+
+        function openChat() {
+            document.querySelector('.chatbot-container').style.display = 'block';
+            document.getElementById('chatbot-icon').style.display = 'none';
         }
 
         async function getInformation() {
@@ -44,10 +132,16 @@
             }
 
             document.getElementById('status-message').innerHTML = "🕒 Gathering information is in progress...";
-            const response = await fetch(`/scrape/${productCategory}`, { method: 'POST' });
-            const data = await response.json();
-            document.getElementById('status-message').innerHTML = "✅ Information gathered successfully!";
-            displayData(data.data);
+            try {
+                const response = await fetch(`/scrape/${productCategory}`, { method: 'POST' });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                document.getElementById('status-message').innerHTML = "✅ Information gathered successfully!";
+                displayData(data.data);
+            } catch (error) {
+                document.getElementById('status-message').innerHTML = "❌ Failed to gather information.";
+                console.error('Fetch error:', error);
+            }
         }
 
         function displayData(data) {
@@ -56,31 +150,18 @@
             data.forEach(item => {
                 tableHtml += `<tr>
                                 <td>${item.product_title}</td>
-                                <td>${item.product_price}</td>
-                                <td>${item.product_rating}</td>
-                                <td>${item.product_highlights}</td>
-                                <td>${item.product_description}</td>
-                                <td>${item.product_reviews}</td>
-                                <td><a href="${item.product_link}" target="_blank">View Product</a></td>
-                            </tr>`;
+                                <td class="truncate expandable" onclick="toggleExpand(this)">${item.product_price}</td>
+                                <td class="truncate expandable" onclick="toggleExpand(this)">${item.product_rating}</td>
+                                <td class="truncate expandable" onclick="toggleExpand(this)">${item.product_highlights}</td>
+                                <td class="truncate expandable" onclick="toggleExpand(this)">${item.product_description}</td>
+                                <td class="truncate expandable" onclick="toggleExpand(this)">${item.product_reviews}</td>
+                                <td><a href="${item.product_link}" target="_blank" rel="noopener noreferrer">View Product</a></td>
+                              </tr>`;
             });
             tableHtml += '</table>';
             document.getElementById('data-table').innerHTML = tableHtml;
         }
 
-        async function getInformation() {
-                const productCategory = document.getElementById('product-category').value;
-                if (!productCategory) {
-                    alert("Please enter a product category!");
-                    return;
-                }
-
-                document.getElementById('status-message').innerHTML = "🕒 Gathering information is in progress...";
-                const response = await fetch(`/scrape/${productCategory}`, { method: 'POST' });
-                const data = await response.json();
-                document.getElementById('status-message').innerHTML = "✅ Information gathered successfully!";
-                displayData(data.data);
-            }
         function toggleTableVisibility() {
             const container = document.getElementById('data-table-container');
             const button = document.querySelector('button[onclick="toggleTableVisibility()"]');
@@ -94,9 +175,15 @@
         }
 
         async function ingestData() {
-            const response = await fetch('/ingest', { method: 'POST' });
-            const data = await response.json();
-            alert(data.message);
+            try {
+                const response = await fetch('/ingest', { method: 'POST' });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                alert("Failed to ingest data.");
+                console.error('Fetch error:', error);
+            }
         }
 
         async function sendMessage() {
@@ -105,17 +192,31 @@
 
             const chatBox = document.getElementById('chat-box');
             const timestamp = new Date().toLocaleTimeString();
-            chatBox.innerHTML += `<div class="message user-message"><div class="icon-container"><img src="/static/assets/user.png" class="icon"></div><div class="message-content">${input}<span class="timestamp">${timestamp}</span></div></div>`;
+            chatBox.innerHTML += `<div class="message user-message"><div class="icon-container"><img src="/static/assets/user.png" class="icon" alt="User icon"></div><div class="message-content">${input}<span class="timestamp">${timestamp}</span></div></div>`;
 
-            const response = await fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: input })
-            });
-            const data = await response.json();
-            chatBox.innerHTML += `<div class="message assistant-message"><div class="icon-container"><img src="/static/assets/bot.png" class="icon"></div><div class="message-content">${data.response}<span class="timestamp">${timestamp}</span></div></div>`;
-            document.getElementById('user-input').value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: input })
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                chatBox.innerHTML += `<div class="message assistant-message"><div class="icon-container"><img src="/static/assets/bot.png" class="icon" alt="Bot icon"></div><div class="message-content">${data.response}<span class="timestamp">${timestamp}</span></div></div>`;
+                document.getElementById('user-input').value = '';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                chatBox.innerHTML += `<div class="message assistant-message"><div class="icon-container"><img src="/static/assets/bot.png" class="icon" alt="Bot icon"></div><div class="message-content">Sorry, there was an error processing your request.<span class="timestamp">${timestamp}</span></div></div>`;
+                console.error('Fetch error:', error);
+            }
+        }
+
+        function toggleExpand(element) {
+            if (element.classList.contains('expanded')) {
+                element.classList.remove('expanded');
+            } else {
+                element.classList.add('expanded');
+            }
         }
     </script>
 </body>
