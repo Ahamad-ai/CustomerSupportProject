@@ -95,6 +95,7 @@
         </div>
         <div>
             <button onclick="ingestData()">Ingest Data</button>
+            <div id="status-message2" class="status-message2"></div>
         </div>
     <div class="chatbot-container">
         <div class="chatbot-header">
@@ -177,6 +178,8 @@
         async function ingestData() {
             try {
                 const response = await fetch('/ingest', { method: 'POST' });
+                document.getElementById('status-message2').innerHTML = "Ingesting data to AstraDB";
+                displayData(data.data);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
                 alert(data.message);
