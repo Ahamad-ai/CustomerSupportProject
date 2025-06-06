@@ -6,6 +6,8 @@ from typing import List, Tuple
 from langchain_core.documents import Document
 from langchain_astradb import AstraDBVectorStore
 import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append('/app/utils')
 from utils.model_loader import ModelLoader
 from utils.config_loader import load_config
 

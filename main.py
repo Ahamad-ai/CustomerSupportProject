@@ -7,6 +7,10 @@ from pydantic import BaseModel
 from Collection.flipkart_scrapper import FlipkartScraper
 from data_ingestion.ingestion_pipeline import DataIngestion
 from retriever.retrievals import Retriever
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append('/app/utils')
 from utils.model_loader import ModelLoader
 from prompt_library.prompt import PROMPT_TEMPLATES
 from langchain_core.prompts import ChatPromptTemplate
