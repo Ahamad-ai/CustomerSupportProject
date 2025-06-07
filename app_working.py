@@ -9,7 +9,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from utils.model_loader import ModelLoader
+from myutils.model_loader import ModelLoader
 
 # Set up Streamlit page
 st.set_page_config(page_title="Flipkart AI Chatbot", layout="wide")

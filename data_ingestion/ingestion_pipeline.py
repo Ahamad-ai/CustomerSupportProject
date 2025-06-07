@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from typing import List, Tuple
 from langchain_core.documents import Document
 from langchain_astradb import AstraDBVectorStore
-from utils.model_loader import ModelLoader
-from utils.config_loader import load_config
+from myutils.model_loader import ModelLoader
+from myutils.config_loader import load_config
 
 class DataIngestion:
     """

@@ -11,6 +11,9 @@ flipkart_chatbot_ai.egg-info/SOURCES.txt
 flipkart_chatbot_ai.egg-info/dependency_links.txt
 flipkart_chatbot_ai.egg-info/requires.txt
 flipkart_chatbot_ai.egg-info/top_level.txt
+myutils/__init__.py
+myutils/config_loader.py
+myutils/model_loader.py
 prompt_library/__init__.py
 prompt_library/prompt.py
 retriever/__init__.py

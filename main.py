@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from Collection.flipkart_scrapper import FlipkartScraper
 from data_ingestion.ingestion_pipeline import DataIngestion
 from retriever.retrievals import Retriever
-from utils.model_loader import ModelLoader
+from myutils.model_loader import ModelLoader
 from prompt_library.prompt import PROMPT_TEMPLATES
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough

@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import sys
-sys.path.append("D:/Projects/CustomerSupportSystem/")
 from exception.exceptions import CustomerSupportSystemException
 import emoji
 import time
