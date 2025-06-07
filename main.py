@@ -37,10 +37,15 @@ async def get_chat_page(request: Request):
     return templates.TemplateResponse("chat.html", {"request": request})
 
 @app.post("/scrape/{product_category}")
-async def scrape_data(product_category: str):
+async def scrape_data(product_category: str,request: Request):
     """Scrape product data from Flipkart."""
     try:
-        scraper = FlipkartScraper(product_category)
+        user_agent = request.headers.get("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/136.0.0.0 Safari/537.36")
+        
+        # Pass the User-Agent to the scraper
+        scraper = FlipkartScraper(product_category, user_agent=user_agent)
+
+        #scraper = FlipkartScraper(product_category)
         df = scraper.run_pipeline()
         data = df.to_dict(orient='records')
         return {"message": f"Data scraped for {product_category}", "data": data}

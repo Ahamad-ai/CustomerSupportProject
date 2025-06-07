@@ -12,14 +12,10 @@ class FlipkartScraper:
 
     file_path = "Data/flipkart_realtime_scrape.csv"
 
-    HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9"
-    }
 
     BASE_URL = "https://www.flipkart.com/search?q={product_category}&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"
 
-    def __init__(self, product_category):
+    def __init__(self, product_category,user_agent):
         self.product_category = product_category
         self.data_dict = {
             "product_title": [],
@@ -30,6 +26,13 @@ class FlipkartScraper:
             "product_reviews": [],
             "product_link": []
         }
+        self.user_agent=user_agent
+        self.HEADERS = {
+            "User-Agent": self.user_agent,  
+            "Accept-Language": "en-US,en;q=0.9"
+        }
+
+
 
     @staticmethod
     def get_title(soup):
