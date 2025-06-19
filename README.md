@@ -81,6 +81,9 @@ streamlit run app_working.py
 - `config/` - YAML config
 - `Data/` - Data files
 
+## Demo
+To see the outcome of the project, please refer to the demo video located at `demo/FlipkartSupportChatbot.mp4`.
+
 ## Contributing
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
